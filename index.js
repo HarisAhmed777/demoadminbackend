@@ -16,7 +16,7 @@ const path = require('path');
 const app = express();
 
 app.use(cors({
-    origin: ["http://localhost:5173"],
+    origin: ["https://roaring-conkies-f53497.netlify.app","http://localhost:5173"],
     methods: ["GET", "POST", "PUT"],
     credentials: true,
     allowedHeaders: ["Content-Type", "Authorization"]
