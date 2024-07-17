@@ -16,7 +16,7 @@ const path = require('path');
 const app = express();
 
 app.use(cors({
-    origin: ["https://roaring-conkies-f53497.netlify.app","http://localhost:5173"],
+    origin: ["https://cerulean-naiad-7b9492.netlify.app","http://localhost:5173"],
     methods: ["GET", "POST", "PUT"],
     credentials: true,
     allowedHeaders: ["Content-Type", "Authorization"]
@@ -85,6 +85,7 @@ app.get('/allusers', async (req, res) => {
 
 app.get('/allbookings', async (req, res) => {
     try {
+        console.log("hi");
         const allbookings = await BookingModel.find();
         res.json(allbookings);
     } catch (error) {
