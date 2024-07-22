@@ -62,17 +62,25 @@ app.get('/countsofall', async (req, res) => {
         const bookingsCount = await BookingModel.countDocuments({});
         const usersCount = await UserModel.countDocuments({});
         const packageRequestsCount = await Form.countDocuments({});
-        console.log(bookingsCount,usersCount,packageRequestsCount);
+
+        // Calculate the total amount
+        const totalAmountResult = await BookingModel.aggregate([
+            { $group: { _id: null, totalAmount: { $sum: "$totalamount" } } }
+        ]);
+
+        const totalAmount = totalAmountResult[0]?.totalAmount || 0;
 
         res.json({
             bookingsCount,
             usersCount,
-            packageRequestsCount
+            packageRequestsCount,
+            totalAmount
         });
     } catch (error) {
         res.status(500).json({ error: 'An error occurred' });
     }
 });
+
 app.get('/allusers', async (req, res) => {
     try {
         const allusers = await UserModel.find();
