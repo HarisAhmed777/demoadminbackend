@@ -10,7 +10,10 @@ const UserModel = require('./models/user');
 const BookingModel =  require('./models/bookings');
 const Form =  require('./models/formmodel');
 const Offer = require ('./models/offer');
-
+const multer = require("multer");
+const BlogModel =  require('./models/blogpage');
+const FeedbackModel =  require('./models/feedback')
+const fs = require("fs");
 const path = require('path');
 
 const app = express();
@@ -48,13 +51,46 @@ app.post('/login', async (req, res) => {
         }
         const token = jwt.sign({ email: user.email, role: user.role }, process.env.JWT_SECRET, { expiresIn: '1h' });
         res.cookie('token', token);
-        res.json({ status: "Success", name: user.email, role: user.role, token });
+        res.json({ status: "Success", name: user.email, role: user.role, token ,id:user._id});
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: "Internal server error" });
     }
 });
 
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "uploads/");
+  },
+  filename: function (req, file, cb) {
+    cb(null, Date.now() + "-" + file.originalname);
+  },
+});
+
+const upload = multer({ storage: storage });
+
+// Blog upload route
+app.post("/blogpage", upload.single("image"), async (req, res) => {
+  try {
+    const { title,firstpara,secondpara } = req.body;
+    const image = req.file ? req.file.path : null;
+
+    const blog = new BlogModel({
+      title,
+      firstpara,
+      secondpara,
+      image,
+    });
+
+    await blog.save();
+    res.status(201).json(blog);
+  } catch (error) {
+    res.status(500).json({ error: "Error saving blog post" });
+  }
+});
 
   
 app.get('/countsofall', async (req, res) => {
@@ -118,6 +154,22 @@ app.get('/allfeedback', async (req, res) => {
     } catch (error) {
         console.error("Error fetching feedback:", error);
         res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+app.post('/feedback', async (req, res) => {
+    const { name, email, feedback } = req.body;
+
+    if (!name || !email || !feedback) {
+        return res.status(400).json({ message: 'All fields are required' });
+    }
+
+    try {
+        const newFeedback = new FeedbackModel({ name, email, feedback });
+        await newFeedback.save();
+        res.status(200).json({ message: 'Feedback submitted successfully' });
+    } catch (error) {
+        res.status(500).json({ message: 'Error submitting feedback', error });
     }
 });
 
