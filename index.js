@@ -13,6 +13,7 @@ const Offer = require ('./models/offer');
 const multer = require("multer");
 const BlogModel =  require('./models/blogpage');
 const FeedbackModel =  require('./models/feedback')
+const PackageModel =  require('./models/packagemodel')
 const fs = require("fs");
 const path = require('path');
 
@@ -72,6 +73,8 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
+
+
 // Blog upload route
 app.post("/blogpage", upload.single("image"), async (req, res) => {
   try {
@@ -91,7 +94,104 @@ app.post("/blogpage", upload.single("image"), async (req, res) => {
     res.status(500).json({ error: "Error saving blog post" });
   }
 });
+app.get('/allblogs', async (req, res) => {
+    try {
+      const blogs = await BlogModel.find(); // Await the Mongoose query
+      res.json(blogs);
+    } catch (error) {
+      console.log("Sending error in blogs", error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
 
+app.use("/packageimages", express.static(path.join(__dirname, "packageimages")));
+
+// Configure multer for file uploads
+const storages = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "packageimages/");
+  },
+  filename: function (req, file, cb) {
+    cb(null, Date.now() + "-" + file.originalname);
+  },
+});
+
+
+const packageimages = multer({ storage: storages });
+
+app.post("/packageaddpage", packageimages.single("image"), async (req, res) => {
+  try {
+    const {packagename,duration,location,cost,catogory,maxdays } = req.body;
+    const image = req.file?req.file.path.replace(/\\/g, "/") : null;
+
+    const package = new PackageModel({
+      packagename,
+      duration,
+      location,
+      cost,
+      catogory,
+      maxdays,
+      image,
+    });
+
+    await package.save();
+    res.status(201).json(package);
+  } catch (error) {
+    res.status(500).json({ error: "Error saving package post" });
+  }
+});
+
+
+
+app.get('/allpackages', async (req, res) => {
+    try {
+      const packages = await PackageModel.find(); // Await the Mongoose query
+      res.json(packages);
+    } catch (error) {
+      console.log("Sending error in packages", error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
+  app.put('/packages/:id', async (req, res) => {
+    try {
+      const packageId = req.params.id;
+      const updatedData = req.body; // Assuming the updated package data is in the request body
+      const updatedPackage = await PackageModel.findByIdAndUpdate(packageId, updatedData, { new: true });
+      res.json(updatedPackage);
+    } catch (error) {
+      res.status(500).json({ message: 'Error updating package', error });
+    }
+  });
+  
+  app.post('/packages/:id', async (req, res) => {
+    try {
+      const packageId = req.params.id;
+  
+      // Find the package to get the image path
+      const package = await PackageModel.findById(packageId);
+      if (!package) {
+        return res.status(404).json({ message: 'Package not found' });
+      }
+  
+      // Delete the image file
+      const imagePath = path.join(__dirname, '', package.image); // Adjust the path as needed
+      fs.unlink(imagePath, (err) => {
+        if (err) {
+          console.error('Error deleting image file:', err);
+        } else {
+          console.log('Image file deleted successfully');
+        }
+      });
+  
+      // Delete the package from the database
+      await PackageModel.findByIdAndDelete(packageId);
+  
+      res.json({ message: 'Package and image deleted successfully' });
+    } catch (error) {
+      res.status(500).json({ message: 'Error deleting package', error });
+    }
+  });
   
 app.get('/countsofall', async (req, res) => {
     try {
