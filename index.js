@@ -118,29 +118,62 @@ const storages = multer.diskStorage({
 
 
 const packageimages = multer({ storage: storages });
-
 app.post("/packageaddpage", packageimages.single("image"), async (req, res) => {
   try {
-    const {packagename,duration,location,cost,catogory,maxdays } = req.body;
-    const image = req.file?req.file.path.replace(/\\/g, "/") : null;
+    const {
+      title,
+      duration,
+      guest,
+      price,
+      mainpara,
+      subpara,
+      transportation,
+      day1city,
+      day1,
+      day1plan,
+      day2city,
+      day2mainpara,
+      day2plan,
+      packagecostperstudent,
+      foodplan,
+      groupsize,
+      perheadcost,
+      costincludes,
+      costexcludes,
+    } = req.body;
+
+    const image = req.file ? req.file.path : null;
 
     const package = new PackageModel({
-      packagename,
+      img: image,
+      title,
       duration,
-      location,
-      cost,
-      catogory,
-      maxdays,
-      image,
+      guest,
+      price,
+      mainpara,
+      subpara,
+      transportation,
+      day1city,
+      day1,
+      day1plan: JSON.parse(day1plan), // Convert string to object
+      day2city,
+      day2mainpara,
+      day2plan,
+      packagecostperstudent,
+      foodplan,
+      groupsize,
+      perheadcost,
+      costincludes: JSON.parse(costincludes), // Convert string to object
+      costexcludes: JSON.parse(costexcludes), // Convert string to object
     });
 
     await package.save();
     res.status(201).json(package);
   } catch (error) {
+    console.error("Error saving package:", error);
     res.status(500).json({ error: "Error saving package post" });
   }
 });
-
 
 
 app.get('/allpackages', async (req, res) => {
